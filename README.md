@@ -1,2 +1,3 @@
 # slab-forge-orchestrator
-industrial supply e commerce assistant
+
+This repository is for identifying industrial supply items.
