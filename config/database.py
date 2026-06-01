@@ -1,6 +1,6 @@
 # config/database.py
 from sqlalchemy import create_engine
+from .settings import get_settings
 
-# Uses an in-memory database for testing and trials
-DATABASE_URI = "sqlite:///:memory:"
-engine = create_engine(DATABASE_URI)
+settings = get_settings()
+engine = create_engine(settings.DATABASE_URI)
