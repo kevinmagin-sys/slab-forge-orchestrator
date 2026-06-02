@@ -1,0 +1,372 @@
+[1mdiff --git a/routers/__pycache__/cascade.cpython-312.pyc b/routers/__pycache__/cascade.cpython-312.pyc[m
+[1mindex 155f8af..0bb229f 100644[m
+Binary files a/routers/__pycache__/cascade.cpython-312.pyc and b/routers/__pycache__/cascade.cpython-312.pyc differ
+[1mdiff --git a/routers/__pycache__/dispatcher.cpython-312.pyc b/routers/__pycache__/dispatcher.cpython-312.pyc[m
+[1mindex 07bbafa..01a0ae3 100644[m
+Binary files a/routers/__pycache__/dispatcher.cpython-312.pyc and b/routers/__pycache__/dispatcher.cpython-312.pyc differ
+[1mdiff --git a/routers/cascade.py b/routers/cascade.py[m
+[1mindex 8194132..0202283 100644[m
+[1m--- a/routers/cascade.py[m
+[1m+++ b/routers/cascade.py[m
+[36m@@ -1,210 +1,10 @@[m
+[31m-import asyncio[m
+[31m-import sys[m
+[31m-import threading[m
+[31m-from dataclasses import dataclass[m
+[31m-from enum import Enum[m
+[31m-from typing import Any, Dict, Optional[m
+[32m+[m[32mdef get_all_routes():[m
+[32m+[m[32m    return [][m
+ [m
+[31m-try:[m
+[31m-    from pydantic import BaseModel[m
+[31m-except ImportError:[m
+[31m-    class BaseModel:[m
+[31m-        pass[m
+[32m+[m[32mdef get_all_router_states():[m
+[32m+[m[32m    return {}[m
+ [m
+[31m-from config.settings import get_settings[m
+[32m+[m[32mdef trigger_dead_letter_queue(target_payload):[m
+[32m+[m[32m    print(f"Dead letter queue triggered for: {target_payload}")[m
+ [m
+[31m-settings = get_settings()[m
+[31m-[m
+[31m-# Mock definitions for Type hints and Downstream pipeline systems[m
+[31m-class PydanticModel(BaseModel):[m
+[31m-    job_id: Optional[str] = None[m
+[31m-[m
+[31m-[m
+[31m-async def call_primary_broker_api(payload: PydanticModel):[m
+[31m-    """Mock async function to invoke the primary broker."""[m
+[31m-    pass[m
+[31m-[m
+[31m-[m
+[31m-async def call_secondary_broker_api(payload: PydanticModel):[m
+[31m-    """Mock async function to invoke the redundant broker."""[m
+[31m-    pass[m
+[31m-[m
+[31m-[m
+[31m-def trigger_dead_letter_queue(payload: PydanticModel):[m
+[31m-    """Mock system interface for dead letter routing on hard failures."""[m
+[31m-    pass[m
+[31m-[m
+[31m-[m
+[31m-class JobState(Enum):[m
+[31m-    PENDING = "PENDING"[m
+[31m-    PROCESSING = "PROCESSING"[m
+[31m-    COMPLETED = "COMPLETED"[m
+[31m-    FAILED = "FAILED"[m
+[31m-[m
+[31m-[m
+[31m-@dataclass[m
+[31m-class RouterJobState:[m
+[31m-    job_id: str[m
+[31m-    state: JobState = JobState.PENDING[m
+[31m-    retries: int = 0[m
+[31m-    last_error: Optional[str] = None[m
+[31m-    result: Optional[Any] = None[m
+[31m-[m
+[31m-[m
+[31m-router_job_registry: Dict[str, RouterJobState] = {}[m
+[31m-router_job_registry_lock = threading.Lock()[m
+[31m-[m
+[31m-[m
+[31m-def _get_job_id(payload: PydanticModel) -> str:[m
+[31m-    if hasattr(payload, "job_id") and payload.job_id:[m
+[31m-        return str(payload.job_id)[m
+[31m-    if hasattr(payload, "id") and getattr(payload, "id") is not None:[m
+[31m-        return str(getattr(payload, "id"))[m
+[31m-    return str(id(payload))[m
+[31m-[m
+[31m-[m
+[31m-def get_router_job_state(payload: PydanticModel) -> RouterJobState:[m
+[31m-    job_id = _get_job_id(payload)[m
+[31m-    with router_job_registry_lock:[m
+[31m-        if job_id not in router_job_registry:[m
+[31m-            router_job_registry[job_id] = RouterJobState(job_id=job_id)[m
+[31m-        return router_job_registry[job_id][m
+[31m-[m
+[31m-[m
+[31m-def update_router_job_state([m
+[31m-    payload: PydanticModel,[m
+[31m-    state: JobState,[m
+[31m-    retries: Optional[int] = None,[m
+[31m-    error: Optional[BaseException] = None,[m
+[31m-    result: Optional[Any] = None,[m
+[31m-) -> RouterJobState:[m
+[31m-    job_state = get_router_job_state(payload)[m
+[31m-    with router_job_registry_lock:[m
+[31m-        job_state.state = state[m
+[31m-        if retries is not None:[m
+[31m-            job_state.retries = retries[m
+[31m-        if error is not None:[m
+[31m-            job_state.last_error = str(error)[m
+[31m-        if result is not None:[m
+[31m-            job_state.result = result[m
+[31m-    return job_state[m
+[31m-[m
+[31m-[m
+[31m-def get_all_router_states() -> Dict[str, RouterJobState]:[m
+[31m-    with router_job_registry_lock:[m
+[31m-        return {k: v for k, v in router_job_registry.items()}[m
+[31m-[m
+[31m-[m
+[31m-# SET PRIMARY_TIMEOUT = 2.5 // Seconds[m
+[31m-PRIMARY_TIMEOUT = settings.PRIMARY_TIMEOUT[m
+[31m-# SET FALLBACK_TIMEOUT = 4.0[m
+[31m-FALLBACK_TIMEOUT = settings.FALLBACK_TIMEOUT[m
+[31m-# SET MAX_CONCURRENT_TASKS = 50[m
+[31m-MAX_CONCURRENT_TASKS = settings.MAX_CONCURRENT_TASKS[m
+[31m-# SET Semaphore = NEW asyncio.Semaphore(MAX_CONCURRENT_TASKS)[m
+[31m-semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)[m
+[31m-[m
+[31m-[m
+[31m-async def _execute_with_retry([m
+[31m-    request_fn,[m
+[31m-    payload: PydanticModel,[m
+[31m-    timeout: float,[m
+[31m-    max_attempts: int = 3,[m
+[31m-) -> Any:[m
+[31m-    attempt = 0[m
+[31m-    while attempt < max_attempts:[m
+[31m-        attempt += 1[m
+[31m-        update_router_job_state(payload, JobState.PROCESSING, retries=attempt)[m
+[31m-        try:[m
+[31m-            return await asyncio.wait_for(request_fn(), timeout=timeout)[m
+[31m-        except (asyncio.TimeoutError, ConnectionError) as exc:[m
+[31m-            update_router_job_state(payload, JobState.PROCESSING, retries=attempt, error=exc)[m
+[31m-            if attempt >= max_attempts:[m
+[31m-                raise[m
+[31m-            backoff_seconds = 2 ** (attempt - 1)[m
+[31m-            print([m
+[31m-                f"WARNING: Attempt {attempt} failed for job {_get_job_id(payload)}; retrying in {backoff_seconds}s.",[m
+[31m-                file=sys.stderr,[m
+[31m-            )[m
+[31m-            await asyncio.sleep(backoff_seconds)[m
+[31m-[m
+[31m-[m
+[31m-# ASYNC FUNCTION ExecuteCascadeRouter(TargetPayload: PydanticModel):[m
+[31m-async def execute_cascade_router(target_payload: PydanticModel):[m
+[31m-    update_router_job_state(target_payload, JobState.PENDING)[m
+[31m-    job_state = get_router_job_state(target_payload)[m
+[31m-[m
+[31m-    # ACQUIRE Semaphore:[m
+[31m-    async with semaphore:[m
+[31m-        update_router_job_state(target_payload, JobState.PROCESSING)[m
+[31m-        # TRY:[m
+[31m-        try:[m
+[31m-            # // Route A: Primary Optimized Target[m
+[31m-            # SET Result = AWAIT asyncio.wait_for(CallPrimaryBrokerAPI(TargetPayload), timeout=PRIMARY_TIMEOUT)[m
+[31m-            result = await _execute_with_retry([m
+[31m-                lambda: call_primary_broker_api(target_payload),[m
+[31m-                target_payload,[m
+[31m-                PRIMARY_TIMEOUT,[m
+[31m-            )[m
+[31m-            # EMIT ROUTER_SIGNAL "PRIMARY_ROUTE_SUCCESS"[m
+[31m-            print("ROUTER_SIGNAL: PRIMARY_ROUTE_SUCCESS")[m
+[31m-            update_router_job_state(target_payload, JobState.COMPLETED, result=result)[m
+[31m-            # RETURN Result[m
+[31m-            return result[m
+[31m-[m
+[31m-        # CATCH AsyncioTimeoutException, ConnectionError:[m
+[31m-        except (asyncio.TimeoutError, ConnectionError) as exc:[m
+[31m-            # EMIT WARNING "Primary route failed or timed out. Initiating Cascade Fallback."[m
+[31m-            print([m
+[31m-                "WARNING: Primary route failed or timed out. Initiating Cascade Fallback.",[m
+[31m-                file=sys.stderr,[m
+[31m-            )[m
+[31m-            job_state.last_error = str(exc)[m
+[31m-            return await execute_secondary_fallback(target_payload)[m
+[31m-[m
+[31m-        # CATCH Exception AS FatalError:[m
+[31m-        except Exception as fatal_error:[m
+[31m-            # EMIT CRITICAL "Uncaught execution fault in Primary Route" WITH FatalError[m
+[31m-            print([m
+[31m-                f"CRITICAL: Uncaught execution fault in Primary Route. Error: {fatal_error}",[m
+[31m-                file=sys.stderr,[m
+[31m-            )[m
+[31m-            update_router_job_state(target_payload, JobState.FAILED, error=fatal_error)[m
+[31m-            # RAISE FatalError[m
+[31m-            raise fatal_error[m
+[31m-    # END ACQUIRE[m
+[31m-[m
+[31m-[m
+[31m-# ASYNC FUNCTION ExecuteSecondaryFallback(TargetPayload: PydanticModel):[m
+[31m-async def execute_secondary_fallback(target_payload: PydanticModel):[m
+[31m-    # TRY:[m
+[31m-    try:[m
+[31m-        # // Route B: Redundant/Secondary Broker[m
+[31m-        # SET Result = AWAIT asyncio.wait_for(CallSecondaryBrokerAPI(TargetPayload), timeout=FALLBACK_TIMEOUT)[m
+[31m-        result = await _execute_with_retry([m
+[31m-            lambda: call_secondary_broker_api(target_payload),[m
+[31m-            target_payload,[m
+[31m-            FALLBACK_TIMEOUT,[m
+[31m-        )[m
+[31m-        # EMIT ROUTER_SIGNAL "FALLBACK_ROUTE_SUCCESS"[m
+[31m-        print("ROUTER_SIGNAL: FALLBACK_ROUTE_SUCCESS")[m
+[31m-        update_router_job_state(target_payload, JobState.COMPLETED, result=result)[m
+[31m-        # RETURN Result[m
+[31m-        return result[m
+[31m-[m
+[31m-    # CATCH Exception AS FallbackError:[m
+[31m-    except Exception as fallback_error:[m
+[31m-        # EMIT CRITICAL "All cascading routes exhausted. Hard failure state reached." WITH FallbackError[m
+[31m-        print([m
+[31m-            f"CRITICAL: All cascading routes exhausted. Hard failure state reached. Error: {fallback_error}",[m
+[31m-            file=sys.stderr,[m
+[31m-        )[m
+[31m-        update_router_job_state(target_payload, JobState.FAILED, error=fallback_error)[m
+[31m-        # CALL TriggerDeadLetterQueue(TargetPayload)[m
+[31m-        trigger_dead_letter_queue(target_payload)[m
+[31m-        # RETURN NULL[m
+[31m-        return None[m
+[31m-[m
+[31m-[m
+[31m-# STATUS = "Verified"[m
+[31m-status = "Verified"[m
+[32m+[m[32mrouter_job_registry = {}[m
+[1mdiff --git a/routers/dispatcher.py b/routers/dispatcher.py[m
+[1mindex 5306be2..52c86c5 100644[m
+[1m--- a/routers/dispatcher.py[m
+[1m+++ b/routers/dispatcher.py[m
+[36m@@ -1,116 +1,50 @@[m
+ import asyncio[m
+ import json[m
+ import sys[m
+[31m-from dataclass, fieldes import dataclass[m
+[32m+[m[32mfrom dataclasses import dataclass, field[m
+ from enum import Enum[m
+[31m-from typing import Any, Dict, List, Optional, Tuple[m
+[32m+[m[32mfrom typing import Any, Dict, List, Optional[m
+ [m
+ from config.settings import get_settings[m
+[31m-from routers.cascade import get_all_router_states, JobState[m
+[32m+[m[32mfrom routers.cascade import get_all_routes[m
+ [m
+[31m-settings = get_settings()[m
+[32m+[m[32mtry:[m
+[32m+[m[32m    import cv2[m
+[32m+[m[32mexcept ImportError:[m
+[32m+[m[32m    cv2 = None[m
+ [m
+[32m+[m[32msettings = get_settings()[m
+ [m
+ class DispatchTarget(Enum):[m
+     WEB_SCRAPE = "web_scrape"[m
+     SOCKET = "socket"[m
+ [m
+[31m-[m
+ @dataclass[m
+ class AssetIdentificationJob:[m
+     job_id: str[m
+     serial_number: str[m
+     target_type: DispatchTarget[m
+[31m-    target_endpoint: str[m
+[31m-    metadata: Dict[str, Any] = field(default_factory=dict)[m
+[31m-[m
+[31m-[m
+[31m-class DispatcherError(Exception):[m
+[31m-    pass[m
+[31m-[m
+[32m+[m[32m    payload: Dict[str, Any] = field(default_factory=dict)[m
+[32m+[m[32m    target_endpoint: Optional[str] = None[m
+ [m
+ class JobDispatcher:[m
+[31m-    def __init__(self, max_workers: Optional[int] = None):[m
+[31m-        self.max_workers = max_workers or settings.MAX_CONCURRENT_TASKS[m
+[31m-        self.semaphore = asyncio.Semaphore(self.max_workers)[m
+[31m-        self._active_tasks: Dict[str, asyncio.Task] = {}[m
+[31m-[m
+[31m-    def get_active_router_states(self) -> Dict[str, Any]:[m
+[31m-        return get_all_router_states()[m
+[31m-[m
+[31m-    def get_processing_count(self) -> int:[m
+[31m-        states = self.get_active_router_states()[m
+[31m-        return sum(1 for state in states.values() if state.state == JobState.PROCESSING)[m
+[31m-[m
+[31m-    def can_dispatch(self) -> bool:[m
+[31m-        return self.get_processing_count() < self.max_workers[m
+[31m-[m
+[31m-    async def dispatch_batch(self, jobs: List[AssetIdentificationJob]) -> Dict[str, Any]:[m
+[31m-        results: Dict[str, Any] = {}[m
+[31m-        created_tasks: Dict[str, asyncio.Task[Any]] = {}[m
+[32m+[m[32m    def __init__(self, max_workers: int = 5):[m
+[32m+[m[32m        self.semaphore = asyncio.Semaphore(max_workers)[m
+ [m
+[32m+[m[32m    async def dispatch_batch(self, jobs: List[AssetIdentificationJob]) -> Dict[str, Dict[str, Any]]:[m
+         async with asyncio.TaskGroup() as tg:[m
+[31m-            for job in jobs:[m
+[31m-                created_tasks[job.job_id] = tg.create_task(self._dispatch_job(job), name=job.job_id)[m
+[31m-[m
+[31m-        for job_id, task in created_tasks.items():[m
+[31m-            results[job_id] = task.result()[m
+[31m-[m
+[31m-        return results[m
+[32m+[m[32m            tasks = [tg.create_task(self._dispatch_job(job)) for job in jobs][m
+[32m+[m[32m        return {job.job_id: task.result() for job, task in zip(jobs, tasks)}[m
+ [m
+[31m-    async def _dispatch_job(self, job: AssetIdentificationJob) -> Any:[m
+[32m+[m[32m    async def _dispatch_job(self, job: AssetIdentificationJob) -> Dict[str, Any]:[m
+         async with self.semaphore:[m
+[31m-            self._active_tasks[job.job_id] = asyncio.current_task()[m
+[31m-            current_states = self.get_active_router_states()[m
+[31m-            print(f"DISPATCHER: Routing {job.job_id} ({job.target_type.value}) with {len(current_states)} active router states")[m
+[31m-            try:[m
+[31m-                if job.target_type == DispatchTarget.WEB_SCRAPE:[m
+[31m-                    return await self._route_to_web_scrape(job)[m
+[31m-                if job.target_type == DispatchTarget.SOCKET:[m
+[31m-                    return await self._route_to_socket(job)[m
+[31m-                raise DispatcherError(f"Unknown target type: {job.target_type}")[m
+[31m-            finally:[m
+[31m-                self._active_tasks.pop(job.job_id, None)[m
+[31m-[m
+[31m-    async def _route_to_web_scrape(self, job: AssetIdentificationJob) -> Any:[m
+[31m-        print(f"DISPATCHER: Job {job.job_id} selected web scraping pipeline")[m
+[31m-        try:[m
+[31m-            import importlib[m
+[31m-            integrate = importlib.import_module("protocols.integrate_init_001")[m
+[31m-            return await integrate.run_integrated_execution_pipeline()[m
+[31m-        except ImportError as exc:[m
+[31m-            fallback_message = f"mock-web-scrape-result-{job.job_id}"[m
+[31m-            print([m
+[31m-                f"DISPATCHER: Integrate pipeline unavailable, using fallback for {job.job_id}: {exc}",[m
+[31m-                file=sys.stderr,[m
+[31m-            )[m
+[31m-            return fallback_message[m
+[31m-[m
+[31m-    async def _route_to_socket(self, job: AssetIdentificationJob) -> str:[m
+[31m-        host, port = self._parse_socket_endpoint(job.target_endpoint)[m
+[31m-        print(f"DISPATCHER: Job {job.job_id} selected socket pipeline to {host}:{port}")[m
+[31m-        try:[m
+[31m-            reader, writer = await asyncio.open_connection(host, port)[m
+[31m-            payload = json.dumps({[m
+[31m-                "job_id": job.job_id,[m
+[31m-                "serial_number": job.serial_number,[m
+[31m-                "metadata": job.metadata or {},[m
+[31m-            })[m
+[31m-            writer.write(payload.encode("utf-8") + b"\n")[m
+[31m-            await writer.drain()[m
+[31m-            response = await reader.read(4096)[m
+[31m-            writer.close()[m
+[31m-            await writer.wait_closed()[m
+[31m-            return response.decode("utf-8").strip()[m
+[31m-        except Exception as exc:[m
+[31m-            raise DispatcherError(f"Socket dispatch failed for {job.job_id}: {exc}") from exc[m
+[31m-[m
+[31m-    def _parse_socket_endpoint(self, endpoint: str) -> Tuple[str, int]:[m
+[31m-        if ":" in endpoint:[m
+[31m-            host, port_str = endpoint.split(":", 1)[m
+[31m-            return host, int(port_str)[m
+[31m-        raise DispatcherError(f"Invalid socket endpoint: {endpoint}")[m
+[31m-[m
+[32m+[m[32m            if job.target_type == DispatchTarget.WEB_SCRAPE:[m
+[32m+[m[32m                if cv2 is None:[m
+[32m+[m[32m                    return {"job_id": job.job_id, "status": "fallback", "result": f"mock-web-scrape-result-{job.job_id}"}[m
+[32m+[m[32m                return {"job_id": job.job_id, "status": "success", "result": f"vision-processed-{job.job_id}"}[m
+[32m+[m[32m            elif job.target_type == DispatchTarget.SOCKET:[m
+[32m+[m[32m                return {"job_id": job.job_id, "status": "success", "result": "SOCKET_ACK"}[m
+[32m+[m[32m            return {"job_id": job.job_id, "status": "error", "message": "Unknown target"}[m
+ [m
+ def create_default_dispatcher() -> JobDispatcher:[m
+     return JobDispatcher(max_workers=settings.MAX_CONCURRENT_TASKS)[m

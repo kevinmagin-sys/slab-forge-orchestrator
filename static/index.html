@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+        #logs { background: #000; padding: 10px; height: 400px; overflow-y: scroll; border: 1px solid #333; font-family: monospace; }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #222; padding-bottom: 2px; }
+        .level-INFO { color: #4fc1ff; }
+        .level-ERROR { color: #f48771; }
+        .level-WARN { color: #cca700; }
+    </style>
+</head>
+<body>
+    <h1>Real-time Log Viewer</h1>
+    <div id="logs"></div>
+    <script src="logViewer.js"></script>
+</body>
+</html>

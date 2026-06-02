@@ -1,4 +1,5 @@
-import asyncio
+html_content = await self.scraper.fetch_raw_html(url)
+parsed_data = self.scraper.parse_industrial_specifications(html_content, source_type)import asyncio
 import unittest
 from unittest.mock import AsyncMock, patch
 
