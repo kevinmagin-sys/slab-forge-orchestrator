@@ -1,0 +1,60 @@
+{
+  "analysis": {
+    "path": "static/uploads/image_001.png",
+    "format": "WEBP",
+    "mode": "RGB",
+    "size": [
+      1600,
+      1200
+    ],
+    "average_rgb": [
+      217.51,
+      209.74,
+      205.54
+    ],
+    "histogram_peaks": [
+      236,
+      234,
+      231
+    ],
+    "dominant_colors": [
+      [
+        236,
+        234,
+        232
+      ],
+      [
+        237,
+        235,
+        231
+      ],
+      [
+        233,
+        231,
+        230
+      ],
+      [
+        234,
+        232,
+        231
+      ],
+      [
+        237,
+        235,
+        233
+      ]
+    ],
+    "edge_density": 0.0706,
+    "grayscale_entropy": 6.1965,
+    "ocr_text": null
+  },
+  "match": {
+    "matched": false,
+    "target": null,
+    "score": 0.241,
+    "reasons": [
+      "bright-dominant",
+      "edge-rich"
+    ]
+  }
+}

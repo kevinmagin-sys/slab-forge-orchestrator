@@ -1,47 +1,28 @@
-import sys
-import asyncio
-from pathlib import Path
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from routers import dispatcher
+import os
+from typing import List
+from fastapi import FastAPI, UploadFile, File
+from routers import dispatcher
+from routers import dispatcher
 
-# Import simulation worker
-from ingress.training_feed import run_stream_simulation
+app.include_router(dispatcher.router)
+app = FastAPI()
+app.include_router(dispatcher.router)
+app.include_router(dispatcher.router)
 
-# Ensure the repository root is in the sys path
-ROOT_DIR = Path(__file__).parent.parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
-# Import your new receiver module
-from ingress.receiver import router
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("Starting up...")
-    # Wire simulation feed into the ASGI event loop
-    simulation_task = asyncio.create_task(run_stream_simulation())
-    try:
-        yield
-    finally:
-        print("Shutting down...")
-        simulation_task.cancel()
-
-app = FastAPI(title="Log Ingress Service", lifespan=lifespan)
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(router)
-
-@app.get("/")
-async def root():
-    return {"message": "Log Ingress Service is running"}
+@app.post("/upload-images")
+async def upload_images(files: List[UploadFile] = File(...)):
+    upload_dir = "./static/uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    saved_paths = []
+    for file in files:
+        if not file.content_type.startswith("image/"):
+            continue
+        
+        file_path = os.path.join(upload_dir, file.filename)
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+        saved_paths.append(f"/static/uploads/{file.filename}")
+    
+    return {"paths": saved_paths}

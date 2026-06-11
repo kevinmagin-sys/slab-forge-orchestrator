@@ -1,21 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Dashboard</title>
-    <style>
-        body { font-family: sans-serif; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
-        #logs { background: #000; padding: 10px; height: 400px; overflow-y: scroll; border: 1px solid #333; font-family: monospace; }
-        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #222; padding-bottom: 2px; }
-        .level-INFO { color: #4fc1ff; }
-        .level-ERROR { color: #f48771; }
-        .level-WARN { color: #cca700; }
-    </style>
-</head>
 <body>
-    <h1>Real-time Log Viewer</h1>
-    <div id="logs"></div>
-    <script src="logViewer.js"></script>
-</body>
-</html>
+    <div class="upload-container">
+    <label for="batch-file-input">Upload Batches:</label>
+    <input type="file" id="batch-file-input" multiple accept="image/*">
+    <button type="button" id="camera-btn">📷 Open Camera</button>
+    
+    <div id="stage-status">0 assets staged.</div>
+    
+    <div id="preview-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 15px;"></div>
+    
+    <button type="button" id="execute-pipeline-btn">🚀 Execute Batch Pipeline</button>
+
+    <div id="gateway-ui-root"></div>
+</div>
+
+<script type="module">
+    import { renderGatewayContainer, startScraperLifecycle } from '/static/logViewer.js';
+
+    const fileInput = document.getElementById('batch-file-input');
+    const stageStatus = document.getElementById('stage-status');
+    const previewGrid = document.getElementById('preview-grid');
+    const executeButton = document.getElementById('execute-pipeline-btn');
+
+    fileInput.addEventListener('change', (event) => {
+        const files = event.target.files;
+        previewGrid.innerHTML = ''; // Clear previous previews
+        
+        if (!files || files.length === 0) {
+            stageStatus.textContent = '0 assets staged.';
+            return;
+        }
+
+        stageStatus.textContent = `${files.length} asset${files.length > 1 ? 's' : ''} staged.`;
+
+        // Loop through files and generate immediate DOM-safe URLs
+        Array.from(files).forEach(file => {
+            const objectUrl = URL.createObjectURL(file);
+            
+            const card = document.createElement('div');
+            card.style.cssText = 'border: 1px solid #333; padding: 5px; border-radius: 4px; text-align: center; background: #1e1e1e;';
+            
+            const img = document.createElement('img');
+            img.src = objectUrl;
+            img.style.cssText = 'max-width: 100%; max-height: 100px; object-fit: contain; border-radius: 2px;';
+            
+            // Free memory when image loads to prevent client leaks
+            img.onload = () => URL.revokeObjectURL(objectUrl);
+
+            const label = document.createElement('div');
+            label.textContent = file.name;
+            label.style.cssText = 'font-size: 11px; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 5px;';
+
+            card.appendChild(img);
+            card.appendChild(label);
+            previewGrid.appendChild(card);
+        });
+    });
+
+    executeButton?.addEventListener('click', async () => {
+        if (!fileInput.files || fileInput.files.length === 0) {
+            return alert('No assets selected');
+        }
+
+        const formData = new FormData();
+        Array.from(fileInput.files).forEach(file => {
+            formData.append('files', file);
+        });
+
+        const response = await fetch('/api/v1/cascade/process-incoming-batch', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        console.log('Pipeline initialization signature:', result);
+
+        const returnedJobId = result.JobId || result.job_id || result.jobId || null;
+        if (returnedJobId) {
+            startScraperLifecycle(returnedJobId, (state) => {
+                renderGatewayContainer('gateway-ui-root', state);
+            });
+        }
+
+        alert('Batch processed successfully');
+        previewGrid.innerHTML = '';
+        stageStatus.textContent = '0 assets staged.';
+    });
+</script>

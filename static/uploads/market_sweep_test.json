@@ -1,0 +1,23 @@
+{
+  "query": "Mock Industrial Part",
+  "results": [
+    {
+      "url": "https://example.com/?q=Mock Industrial Part",
+      "status": 200,
+      "text_snippet": "<!doctype html><html lang=\"en\"><head><title>Example Domain</title><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><style>body{background:#eee;width:60vw;margin:15vh auto;font-family:system-ui,sans-serif}h1{font-size:1.5em}div{opacity:0.8}a:link,a:visited{color:#348}</style></head><body><div><h1>Example Domain</h1><p>This domain is for use in documentation examples without needing permission. Avoid use in operations.</p><p><a href=\"https://iana.org/domains/example\">Learn more<",
+      "prices": []
+    },
+    {
+      "url": "https://httpbin.org/anything?search=Mock Industrial Part",
+      "status": 200,
+      "text_snippet": "{\n  \"args\": {\n    \"search\": \"Mock Industrial Part\"\n  }, \n  \"data\": \"\", \n  \"files\": {}, \n  \"form\": {}, \n  \"headers\": {\n    \"Accept\": \"*/*\", \n    \"Accept-Encoding\": \"gzip, deflate\", \n    \"Host\": \"httpbin.org\", \n    \"User-Agent\": \"python-httpx/0.28.1\", \n    \"X-Amzn-Trace-Id\": \"Root=1-6a26d627-3c39c9c64c066276686af119\"\n  }, \n  \"json\": null, \n  \"method\": \"GET\", \n  \"origin\": \"51.8.152.65\", \n  \"url\": \"https://httpbin.org/anything?search=Mock Industrial Part\"\n}\n",
+      "prices": []
+    },
+    {
+      "url": "https://httpbin.org/get?query=Mock Industrial Part",
+      "status": 200,
+      "text_snippet": "{\n  \"args\": {\n    \"query\": \"Mock Industrial Part\"\n  }, \n  \"headers\": {\n    \"Accept\": \"*/*\", \n    \"Accept-Encoding\": \"gzip, deflate\", \n    \"Host\": \"httpbin.org\", \n    \"User-Agent\": \"python-httpx/0.28.1\", \n    \"X-Amzn-Trace-Id\": \"Root=1-6a26d627-5438453d7887a7724394e864\"\n  }, \n  \"origin\": \"51.8.152.65\", \n  \"url\": \"https://httpbin.org/get?query=Mock Industrial Part\"\n}\n",
+      "prices": []
+    }
+  ]
+}

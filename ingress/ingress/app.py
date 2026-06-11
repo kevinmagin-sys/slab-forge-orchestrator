@@ -1,46 +1,51 @@
-import asyncio
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Dict, Any
-from routers.dispatcher import JobDispatcher, AssetIdentificationJob, DispatchTarget
+import os
+from fastapi import FastAPI, File, UploadFile
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
-app = FastAPI(title="Slab-Forge Mobile Gateway")
+app = FastAPI()
 
-# Enable CORS so your mobile phone web browser can securely communicate with the backend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], 
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Calculate absolute path to the root static directory
+base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+static_dir = os.path.join(base_dir, "static")
 
-# Initialize the dispatcher with the core ScraperNetworkProtocol integrated
-dispatcher = JobDispatcher(max_workers=5)
+# Mount static files safely for asset image rendering
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-class MobileJobRequest(BaseModel):
-    url: str
-    source_type: str = "industrial"
+@app.get("/")
+async def read_root():
+    return {"status": "online", "engine": "Slab-Forge-Orchestrator"}
 
-@app.post("/api/dispatch")
-async def dispatch_mobile_job(payload: MobileJobRequest):
-    if not payload.url:
-        raise HTTPException(status_code=400, detail="Missing target URL")
-        
-    # Format the incoming mobile request into the core pipeline job architecture
-    job = AssetIdentificationJob(
-        target_type=DispatchTarget.WEB_SCRAPE,
-        payload={"url": payload.url, "source_type": payload.source_type}
-    )
+# TARGET ROUTE FOR MULTI-ASSET EXTRACTION
+@app.post("/api/extract")
+async def extract_industrial_assets(files: list[UploadFile] = File(...)):
+    extracted_manifest = []
     
-    try:
-        # Route directly through the network protocol
-        result = await dispatcher._route_to_web_scrape(job)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    for file in files:
+        contents = await file.read()
+        print(f"[INGRESS] Received Asset: {file.filename} | Size: {len(contents)} bytes")
+        
+        # Placeholder dictionary structure aligning with your logViewer.js match schema
+        extracted_manifest.append({
+            "item": file.filename.upper().split('.')[0],
+            "source_url": "https://www.industrial-surplus-catalog.com",
+            "image_url": f"/static/uploads/{file.filename}",
+            "verified": True,
+            "confidence": 0.95
+        })
+        
+    print(f"[INGRESS] Complete. Processed {len(files)} assets.")
+    return {
+        "status": "success",
+        "processed_assets": len(files),
+        "matches": extracted_manifest
+    }
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+@app.get("/api/logs")
+async def get_telemetry_logs():
+    # Fallback route ensuring logViewer.js fetchLogs() always receives a valid data schema
+    return {
+        "status": "success",
+        "processed_assets": 0,
+        "matches": []
+    }

@@ -1,0 +1,26 @@
+{
+  "analysis": {
+    "path": "static/uploads/s-l1600 (12).webp",
+    "format": "WEBP",
+    "mode": "RGB",
+    "size": [
+      1600,
+      1200
+    ],
+    "average_rgb": [
+      217.51,
+      209.74,
+      205.54
+    ],
+    "histogram_peaks": [
+      236,
+      234,
+      231
+    ]
+  },
+  "match": {
+    "matched": false,
+    "target": null,
+    "score": 0.0
+  }
+}
