@@ -1,22 +1,28 @@
-import { PlaywrightTestConfig, chromium } from '@playwright/test';
+import { PlaywrightTestConfig } from '@playwright/test';
 import { exec } from 'child_process';
 import { rm } from 'fs/promises';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+interface ExecutionStatus {
+  ExitCode: number;
+}
+
 const allocateIsolatedStorageState = (): string => {
   return JSON.stringify({ cookies: [], origins: [] });
 };
 
-const executePlaywrightCore = async (config: PlaywrightTestConfig, storageContext: string): Promise<{ ExitCode: number }> => {
+const executePlaywrightCore = async (config: PlaywrightTestConfig, storageContext: string): Promise<ExecutionStatus> => {
   return { ExitCode: 0 };
 };
 
 const forceTerminateBrowserInstances = async (): Promise<void> => {
-  const isWin = process.platform === 'win32';
-  const cmd = isWin ? 'taskkill /f /im chrome.exe /im jsedgerunner.exe' : 'pkill -f chromium || true';
-  await execAsync(cmd);
+  const isWindows = process.platform === 'win32';
+  const command = isWindows 
+    ? 'taskkill /f /im chrome.exe /im msedgewebview2.exe /im headlessextension.exe' 
+    : 'pkill -f "(chrome|chromium|webkit)" || true';
+  await execAsync(command);
 };
 
 const clearTemporaryStorageProfiles = async (): Promise<void> => {
